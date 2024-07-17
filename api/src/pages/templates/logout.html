@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Выход{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; height: 80vh; text-align: center;">
+    <div>
+        <h1>Вы вышли из системы</h1>
+        <p>Спасибо за использование нашего сервиса.</p>
+    </div>
+    <script>
+        localStorage.clear();
+        sessionStorage.clear();
+        setTimeout(() => {
+            window.location.href = '/pages/login';
+        }, 2);
+    </script>
+</div>
+{% endblock %}

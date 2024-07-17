@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Профиль пользователя{% endblock %}
+
+{% block content %}
+<div>
+    <h1>Информация о пользователе</h1>
+    <p><strong>Имя пользователя:</strong> {{ username }}</p>
+    <p><strong>Email:</strong> {{ email }}</p>
+    <form action="logout" method="get">
+        <input type="submit" value="Выйти">
+    </form>
+</div>
+
+<div>
+    <h2>Мои брони</h2>
+    {% if bookings %}
+        <ul>
+            {% for booking in bookings %}
+                <li>
+                    <p><strong>Отель:</strong> {{ booking.hotel_name }}</p>
+                    <p><strong>Сумма:</strong> {{ booking.sum }}</p>
+                    <p><strong>Дата брони:</strong> {{ booking.d }}</p>
+                    <form id="cancelForm" method="post">
+                        <input type="hidden" id="booking_id" value="{{ booking.id }}">
+                        <button type="submit">Отменить</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>У вас нет броней.</p>
+    {% endif %}
+</div>
+
+<div>
+    <h2>Мои отзывы</h2>
+    {% if reviews %}
+        <ul>
+            {% for review in reviews %}
+                <li>
+                    <p><strong>Отель:</strong> {{ review.hotel_name }}</p>
+                    <p><strong>Заголовок:</strong> {{ review.name }}</p>
+                    <p><strong>Текст:</strong> {{ review.text }}</p>
+                    <p><strong>Дата:</strong> {{ review.dt }}</p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>У вас нет отзывов.</p>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        let token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+        if (token === null) {
+            window.location.href = '/pages/login';
+            return;
+        }
+
+        const response = await fetch('/api/v1/check_token', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'auth': token,
+            }
+        });
+
+        if (response.status === 401) {
+            let rt = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token')
+
+            if (rt === null) {
+                localStorage.clear();
+                window.location.href = '/pages/login';
+                return;
+            }
+
+            const rtResponse = await fetch('/api/v1/auth/refresh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'token': rt,
+                }
+            });
+
+            if (rtResponse.ok) {
+                const data = await rtResponse.json();
+                localStorage.clear();
+                sessionStorage.clear();
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('refresh_token', data.refresh_token);
+                sessionStorage.setItem('token', data.token);
+                sessionStorage.setItem('refresh_token', data.refresh_token);
+                
+                location.reload();
+
+            } else {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/pages/login';
+            }
+        }
+    });
+
+    document.getElementById('cancelForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+        if (!token) {
+            window.location.href = '/pages/login';
+        }
+        
+        try {
+            const response = await fetch(`/api/v1/hotel/cancel?booking_id=${document.getElementById('booking_id').value}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'auth': token,
+                },
+            });
+
+            console.log(response.text());
+
+            if (response.ok) {
+                location.reload(); 
+            } else {
+                alert(`Ошибка при отмене брони: ${data.detail}`);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    });
+</script>
+
+
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}About Us{% endblock %}
+
+{% block content %}
+    <div style="padding-left: 10px;">
+        <h2>О нас</h2>
+        <p>Добро пожаловать в наш сервис по бронированию отелей 'Roomyantsev.com'! Здесь вы найдете отель на любой вкус и в любом ценовом диапазоне.</p>
+        <h3>Наша команда</h3>
+        <ul>
+            <li><strong>Паха</strong> - Главный инвестор</li>
+            <li><strong>Егор</strong> - Главный повар</li>
+        </ul>
+        <h3>Наша история</h3>
+        <p>Наша компания начала деятельность в 1991 году, с тех пор не было ни единого реального конкурента нам (ostrovok лежать + ...)</p>
+        <h3>Связаться с нами</h3>
+        <p>По всем вопросам обращаться <a href="contacts">сюда</a>.</p>
+    </div>
+
+<script>
+    async function sendRequest() {
+        let token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+        if (token === null) {
+            window.location.href = '/pages/login';
+            return;
+        }
+
+        const response = await fetch('/api/v1/check_token', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'auth': token,
+            }
+        });
+
+        if (response.status === 401) {
+            let rt = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token')
+
+            if (rt === null) {
+                localStorage.clear();
+                window.location.href = '/pages/login';
+                return;
+            }
+
+            const rtResponse = await fetch('/api/v1/auth/refresh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'token': rt,
+                }
+            });
+
+            if (rtResponse.ok) {
+                const data = await rtResponse.json();
+                localStorage.clear();
+                sessionStorage.clear();
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('refresh_token', data.refresh_token);
+                sessionStorage.setItem('token', data.token);
+                sessionStorage.setItem('refresh_token', data.refresh_token);
+            } else {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/pages/login';
+            }
+        }
+    }
+
+    window.onload = function() {
+        sendRequest();
+    };
+</script>
+
+{% endblock %}

@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}
+Информация об отеле
+{% endblock %}
+
+{% block content %}
+<div style="padding: 20px;">
+    <img src="{{ hotel_photo }}" alt="Отель {{ hotel_id }}">
+    <h1>Отель: {{ name }}</h1>
+    <p><strong>Местоположение:</strong> {{ location }}</p>
+    <p><strong>Звезды:</strong> {{ stars }}</p>
+    <p><strong>Описание:</strong> {{ description }}</p>
+    <p><strong>Цена:</strong> {{ price }}</p>
+    <form id="bookingForm" method="post">
+        <input type="hidden" name="hotel_id" value="{{ hotel_id }}">
+        <input type="hidden" name="sum" value="{{ price }}">
+        <label for="bookingDate">Дата бронирования:</label>
+        <input type="date" id="bookingDate" name="booking_date" required>
+        <button type="submit">Забронировать</button>
+    </form>
+    <form id="reviewForm" method="post">
+        <label for="reviewTitle">Заголовок отзыва:</label>
+        <input type="text" id="reviewTitle" name="review_title" required>
+        <br>
+        <label for="reviewContent">Текст отзыва:</label>
+        <textarea id="reviewContent" name="review_content" rows="4" required></textarea>
+        <br>
+        <button type="submit">Отправить отзыв</button>
+    </form>
+</div>
+
+<div>
+    <h2>Отзывы отеля</h2>
+    {% if reviews %}
+        <ul>
+            {% for review in reviews %}
+                <li>
+                    <p><strong>Имя пользователя:</strong> {{ review.client_name }}</p>
+                    <p><strong>Заголовок:</strong> {{ review.name }}</p>
+                    <p><strong>Текст:</strong> {{ review.text }}</p>
+                    <p><strong>Дата:</strong> {{ review.dt }}</p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>У отеля нет отзывов.</p>
+    {% endif %}
+</div>
+
+<script>
+    document.getElementById("bookingForm").addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+        if (!token) {
+            window.location.href = '/pages/login';
+        }
+
+        const formData = {
+            hotel_id: "{{ hotel_id }}",
+            d: document.getElementById('bookingDate').value,
+        };
+        
+        try {
+            const response = await fetch('/api/v1/hotel/book', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'auth': token,
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            let data = await response.json();
+
+            console.log(data.success);
+            if (response.status === 200) {
+                alert("Успешно забронировано");
+            } else {
+                if (data.detail === 'token is invalid') {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/pages/login';
+                }
+                alert(`Ошибка при бронировании: ${data.detail}`);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    });
+
+    document.getElementById("reviewForm").addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+        if (!token) {
+            window.location.href = '/pages/login';
+        }
+
+        const formData = {
+            hotel_id: "{{ hotel_id }}",
+            name: document.getElementById('reviewTitle').value,
+            text: document.getElementById('reviewContent').value,
+        };
+        
+        try {
+            const response = await fetch('/api/v1/review/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'auth': token,
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            let data = await response.json();
+
+            console.log(data.success);
+            if (response.status === 200) {
+                alert("Отзыв отправлен");
+            } else {
+                alert(`Ошибка при отправке отзыва: ${data.detail}`);
+            }
+            this.reset();
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    });
+</script>
+
+<script>
+    async function sendRequest() {
+        let token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+        if (token === null) {
+            window.location.href = '/pages/login';
+            return;
+        }
+
+        const response = await fetch('/api/v1/check_token', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'auth': token,
+            }
+        });
+
+        if (response.status === 401) {
+            let rt = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token')
+
+            if (rt === null) {
+                localStorage.clear();
+                window.location.href = '/pages/login';
+                return;
+            }
+
+            const rtResponse = await fetch('/api/v1/auth/refresh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'token': rt,
+                }
+            });
+
+            if (rtResponse.ok) {
+                const data = await rtResponse.json();
+                localStorage.clear();
+                sessionStorage.clear();
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('refresh_token', data.refresh_token);
+                sessionStorage.setItem('token', data.token);
+                sessionStorage.setItem('refresh_token', data.refresh_token);
+            } else {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/pages/login';
+            }
+        }
+    }
+
+    window.onload = function() {
+        sendRequest();
+    };
+</script>
+
+{% endblock %}

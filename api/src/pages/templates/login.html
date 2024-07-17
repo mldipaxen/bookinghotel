@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Вход{% endblock %}
+
+{% block content %}
+<h2 style="text-align: center;">Вход</h2>
+<div style="border: 4px solid black; padding: 20px; margin-top: 90px; width: calc(100% - 100px); max-width: 300px; margin: 90px auto 0 auto; background-color: rgb(133, 184, 203);">
+    <form id="loginForm" style="display: flex; flex-direction: column; align-items: center;">
+        <input type="email" id="email" name="email" required placeholder="почта" style="width: 150px; height: 40px; color: gray; margin-bottom: 10px;" onfocus="this.style.color='black'"><br>
+        <input type="password" id="password" name="password" required placeholder="пароль" style="width: 150px; height: 40px; color: gray; margin-bottom: 10px;" onfocus="this.style.color='black'"><br>
+        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+            <input type="checkbox" id="remember" name="remember" style="margin-right: 10px;">
+            <label for="remember">Запомнить меня</label>
+        </div>
+        <input type="submit" value="Войти" style="width: 150px; height: 75px;">
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+        if (token) {
+            window.location.href = '/pages/hotels';
+        }
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        const formData = {
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+        };
+        
+        try {
+            const response = await fetch('/api/v1/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            let data = await response.json();
+            
+            if (response.ok) {
+                if (document.getElementById('remember').checked) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('refrest_token', data.refresh_token);
+                }
+                sessionStorage.setItem('token', data.token);
+                sessionStorage.setItem('refresh_token', data.refresh_token);
+                console.log('Login successful');
+                window.location.href = '/pages/hotels';
+            } else {
+                alert(`Ошибка при входе: ${data.detail}`);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    });
+</script>
+{% endblock %}

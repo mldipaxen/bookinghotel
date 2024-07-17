@@ -1,0 +1,39 @@
+name: hotel
+
+services:
+
+    database:
+        image: postgres:16
+        restart: always
+        environment:
+            POSTGRES_PASSWORD: postgres
+        expose:
+            - 5432
+        volumes:
+            - ./dumps/main.sql:/docker-entrypoint-initdb.d/main.sql
+            - ./dumps:/dumps
+            - ./data:/var/lib/postgresql/data
+        command: -c 'jit=off'
+
+    api:
+        links:
+            - database
+        image: api
+        restart: always
+        ports:
+            - 8000:8000
+        environment:
+            DB_NAME: postgres
+            DB_PORT: 5432
+            DB_PASS: postgres
+            DB_USER: postgres
+            DB_HOST: database
+        env_file:
+            - .env
+        build: ./api
+        command: python -m uvicorn src.app:app --host 0.0.0.0 --port 8000 --reload
+            
+volumes:
+    data:
+        driver: local
+    
