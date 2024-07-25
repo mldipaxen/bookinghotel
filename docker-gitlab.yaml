@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+
+  # gitlab-server:
+  #   image: gitlab/gitlab-ce:latest
+  #   container_name: gitlab-server
+  #   environment:
+  #     GITLAB_OMNIBUS_CONFIG: |
+  #       external_url 'http://localhost:8088'
+  #       nginx['listen_port'] = 8088
+  #       gitlab_rails['initial_root_password'] = 'Qwerty16'
+  #       puma['worker_processes'] = 0 # disable cluster mode to avoid more memory usage
+  #   ports:
+  #     - '8088:8088'
+
+  gitlab-runner:
+    image: gitlab/gitlab-runner:alpine
+    container_name: gitlab-runner
+    # volumes:
+    #   - /var/run/docker.sock:/var/run/docker.sock
+
+# gitlab-runner register --url http://localhost:8088 --token token --docker-network-mode 'host' 
+# http://localhost:8000

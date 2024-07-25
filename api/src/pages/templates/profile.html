@@ -42,6 +42,10 @@
                     <p><strong>Заголовок:</strong> {{ review.name }}</p>
                     <p><strong>Текст:</strong> {{ review.text }}</p>
                     <p><strong>Дата:</strong> {{ review.dt }}</p>
+                    <!-- <form id="cancelForm1" method="post">
+                        <input type="hidden" id="review_id" value="{{ review.id }}">
+                        <button type="submit">Удалить</button>
+                    </form> -->
                 </li>
             {% endfor %}
         </ul>
@@ -132,6 +136,39 @@
             console.error('Error:', error);
         }
     });
+
+    document.getElementById('cancelForm1').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+        if (!token) {
+            window.location.href = '/pages/login';
+        }
+        
+        try {
+            const response = await fetch(`/api/v1/review/deletereview?review_id=${document.getElementById('review_id').value}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'auth': token,
+                },
+            });
+
+            console.log(response.text());
+
+            if (response.ok) {
+                location.reload(); 
+            } else {
+                alert(`Ошибка при удалении отзыва: ${data.detail}`);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    });
+
+
+
 </script>
 
 

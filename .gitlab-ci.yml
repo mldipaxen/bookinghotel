@@ -1,0 +1,11 @@
+stages:
+  - linting
+
+linter:
+  stage: linting
+  image: python:3.12
+  script:
+    - pip install -r gitlab-requirements.txt
+    - black --check . --exclude "/(migrations)/"
+    - isort . --check-only --profile black
+  allow_failure: true

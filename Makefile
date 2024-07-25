@@ -5,7 +5,6 @@ else
 	SLEEP := sleep
 endif
 
-# dev
 
 start:
 	docker compose -f docker-compose.yaml up --build -d

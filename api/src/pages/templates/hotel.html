@@ -5,20 +5,27 @@
 {% endblock %}
 
 {% block content %}
+<div style="padding: 20px; display: flex;">
+    <div style="flex: 1; max-width: 200px;">
+        <img src="{{ hotel_photo }}" alt="Отель {{ hotel_id }}" style="width: 700px; height: 500px;">
+    </div>
+    <div style="flex: 3; margin-left: 600px;">
+        <h1>Отель: {{ name }}</h1>
+        <p><strong>Местоположение:</strong> {{ location }}</p>
+        <p><strong>Звезды:</strong> {{ stars }}</p>
+        <p><strong>Описание:</strong> {{ description }}</p>
+        <p><strong>Цена:</strong> {{ price }}</p>
+        <form id="bookingForm" method="post">
+            <input type="hidden" name="hotel_id" value="{{ hotel_id }}">
+            <input type="hidden" name="sum" value="{{ price }}">
+            <label for="bookingDate">Дата бронирования:</label>
+            <input type="date" id="bookingDate" name="booking_date" required>
+            <button type="submit">Забронировать</button>
+        </form>
+    </div>
+</div>
+
 <div style="padding: 20px;">
-    <img src="{{ hotel_photo }}" alt="Отель {{ hotel_id }}">
-    <h1>Отель: {{ name }}</h1>
-    <p><strong>Местоположение:</strong> {{ location }}</p>
-    <p><strong>Звезды:</strong> {{ stars }}</p>
-    <p><strong>Описание:</strong> {{ description }}</p>
-    <p><strong>Цена:</strong> {{ price }}</p>
-    <form id="bookingForm" method="post">
-        <input type="hidden" name="hotel_id" value="{{ hotel_id }}">
-        <input type="hidden" name="sum" value="{{ price }}">
-        <label for="bookingDate">Дата бронирования:</label>
-        <input type="date" id="bookingDate" name="booking_date" required>
-        <button type="submit">Забронировать</button>
-    </form>
     <form id="reviewForm" method="post">
         <label for="reviewTitle">Заголовок отзыва:</label>
         <input type="text" id="reviewTitle" name="review_title" required>
@@ -30,7 +37,7 @@
     </form>
 </div>
 
-<div>
+<div style="padding: 20px;">
     <h2>Отзывы отеля</h2>
     {% if reviews %}
         <ul>
@@ -51,6 +58,15 @@
 <script>
     document.getElementById("bookingForm").addEventListener("submit", async function(event) {
         event.preventDefault();
+
+        const bookingDate = new Date(document.getElementById('bookingDate').value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (bookingDate < today) {
+            alert("Невозможно забронировать на прошедшую дату.");
+            return;
+        }
 
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
@@ -129,61 +145,6 @@
             console.error('Error:', error);
         }
     });
-</script>
-
-<script>
-    async function sendRequest() {
-        let token = localStorage.getItem('token') || sessionStorage.getItem('token');
-
-        if (token === null) {
-            window.location.href = '/pages/login';
-            return;
-        }
-
-        const response = await fetch('/api/v1/check_token', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'auth': token,
-            }
-        });
-
-        if (response.status === 401) {
-            let rt = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token')
-
-            if (rt === null) {
-                localStorage.clear();
-                window.location.href = '/pages/login';
-                return;
-            }
-
-            const rtResponse = await fetch('/api/v1/auth/refresh', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'token': rt,
-                }
-            });
-
-            if (rtResponse.ok) {
-                const data = await rtResponse.json();
-                localStorage.clear();
-                sessionStorage.clear();
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('refresh_token', data.refresh_token);
-                sessionStorage.setItem('token', data.token);
-                sessionStorage.setItem('refresh_token', data.refresh_token);
-            } else {
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.href = '/pages/login';
-            }
-        }
-    }
-
-    window.onload = function() {
-        sendRequest();
-    };
-</script>
+</script> 
 
 {% endblock %}

@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends
-from sqlalchemy import desc, insert, select
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import delete, desc, insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.database import get_session
 from src.database.models import Review, User
@@ -31,6 +31,25 @@ async def review_add(
     await session.commit()
 
     return {"detail": "review add success"}
+
+@review_router.post("/deletereview")
+async def review_del(
+    review_id: int,
+    user: User = Depends(login_required),
+    session: AsyncSession = Depends(get_session),
+):
+    review = await session.get(Review, review_id)
+    
+    if not review:
+        raise HTTPException(
+            status_code=400,
+            detail="review not found",
+        )
+    
+    await session.execute(delete(Review).where(Review.id == review.id))
+    await session.commit()
+
+    return {"detail": "review cancel success"}
 
 
 @review_router.get("/view")

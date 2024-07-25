@@ -49,7 +49,7 @@ async def hotels(request: Request):
     if token:
         hotels: list = (
             await client.get(
-                "http://127.0.0.1:8000/api/v1/hotel/view",
+                "http://127.0.0.1:7000/api/v1/hotel/view",
                 headers={"auth": request.session.get("auth")},
             )
         ).json()
@@ -80,34 +80,41 @@ async def hotel(request: Request, id: int):
             base_dict | {"request": request},
         )
     
-    hotel: dict = (
-        await client.get(
-            "http://127.0.0.1:8000/api/v1/hotel/view?hotel_id=" + str(id),
-            headers={"auth": request.session.get("auth")},
-        )
-    ).json()
+    hotel_response = await client.get(
+        f"http://127.0.0.1:7000/api/v1/hotel/view?hotel_id={id}",
+        headers={"auth": token},
+    )
 
-    reviews: list = (
-        await client.get(
-            "http://127.0.0.1:8000/api/v1/review/view?hotel_id=" + str(id),
-            headers={"auth": request.session.get("auth")},
-        )
-    ).json()
+    if hotel_response.status_code != 200:
+        raise HTTPException(status_code=hotel_response.status_code, detail="Hotel not found")
+
+    hotel = hotel_response.json()
+
+    reviews_response = await client.get(
+        f"http://127.0.0.1:7000/api/v1/review/view?hotel_id={id}",
+        headers={"auth": token},
+    )
 
     reviews_result = []
 
-    for review in reviews:
-        username: str = (
-            await client.get(
-                "http://127.0.0.1:8000/api/v1/user/view?user_id="
-                + str(review["user_id"]),
+    if reviews_response.status_code == 200:
+        reviews = reviews_response.json()
+
+        for review in reviews:
+            user_response = await client.get(
+                f"http://127.0.0.1:7000/api/v1/user/view?user_id={review['user_id']}",
                 headers={"auth": token},
             )
-        ).json()
 
-        review["client_name"] = username
-
-        reviews_result.append(review)
+            if user_response.status_code == 200:
+                username = user_response.json()
+                review["client_name"] = username
+                reviews_result.append(review)
+            else:
+                review["client_name"] = "Unknown"
+                reviews_result.append(review)
+    else:
+        reviews_result = []
 
     return templates.TemplateResponse(
         "hotel.html",
@@ -124,6 +131,7 @@ async def hotel(request: Request, id: int):
             "reviews": reviews_result,
         },
     )
+
 
 
 @page_router.get("/contacts")
@@ -148,7 +156,7 @@ async def profile(request: Request):
 
     # check: dict = (
     #     await client.get(
-    #         "http://127.0.0.1:8000/api/v1/check_token",
+    #         "http://127.0.0.1:7000/api/v1/check_token",
     #         headers={"auth": token},
     #     )
     # ).json()
@@ -156,7 +164,7 @@ async def profile(request: Request):
     if token:
         user: dict = (
             await client.get(
-                "http://127.0.0.1:8000/api/v1/user/view",
+                "http://127.0.0.1:7000/api/v1/user/view",
                 headers={"auth": token},
             )
         ).json()
@@ -168,7 +176,7 @@ async def profile(request: Request):
             for booking in user["bookings"]:
                 hotel: dict = (
                     await client.get(
-                        "http://127.0.0.1:8000/api/v1/hotel/view?hotel_id="
+                        "http://127.0.0.1:7000/api/v1/hotel/view?hotel_id="
                         + str(booking["hotel_id"]),
                         headers={"auth": token},
                     )
@@ -182,7 +190,7 @@ async def profile(request: Request):
             for review in user["reviews"]:
                 hotel: dict = (
                     await client.get(
-                        "http://127.0.0.1:8000/api/v1/hotel/view?hotel_id="
+                        "http://127.0.0.1:7000/api/v1/hotel/view?hotel_id="
                         + str(review["hotel_id"]),
                         headers={"auth": token},
                     )

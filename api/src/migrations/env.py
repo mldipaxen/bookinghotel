@@ -1,6 +1,6 @@
 from logging.config import fileConfig
 
-import src.database.models
+from src.database.models import *
 from alembic import context
 from config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
 from src.database.database import metadata
